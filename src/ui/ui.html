@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>State machine</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body>
+  <div class="content">
+    <!-- Column 1: Components List -->
+    <div class="column">
+      <div class="column-header">Component Types</div>
+      <div class="column-content">
+        <div id="loading" class="loading">
+          <div class="spinner"></div>
+          Analyzing selection...
+        </div>
+        
+        <div id="empty-state" class="empty-state" style="display: none;">
+          <div class="empty-state-icon">📦</div>
+          <div>No component types found</div>
+          <div style="font-size: 11px; margin-top: 8px; opacity: 0.7;">
+            Select a component instance with nested variant components
+          </div>
+        </div>
+        
+        <ul id="component-list" class="component-list" style="display: none;"></ul>
+      </div>
+    </div>
+
+    <!-- Column 2: Rule Builder -->
+    <div class="column">
+      <div class="column-header">Interaction Builder</div>
+      <div class="column-content">
+        <div id="no-selection" class="empty-state">
+          <div class="empty-state-icon">👈</div>
+          <div>Select a component type</div>
+          <div style="font-size: 11px; margin-top: 8px; opacity: 0.7;">
+            Choose a component type from the left to create click interactions
+          </div>
+        </div>
+
+        <div id="rule-builder" class="rule-builder">
+          <div class="form-group">
+            <label class="form-label">On Click, change clicked instance to</label>
+            <select id="primary-action" class="form-control">
+              <option value="">Select target state...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">For other instances, apply these conditional rules</label>
+            <div id="conditional-rules" class="conditional-rules">
+              <!-- Dynamic conditional rules will be populated here -->
+            </div>
+            <button id="add-rule" class="btn btn-secondary" style="margin-top: 8px;">+ Add Conditional Rule</button>
+          </div>
+
+          <div class="rule-preview">
+            <strong>Interaction Preview:</strong><br>
+            <span id="rule-preview-text">Select a component type and define the primary click action</span>
+          </div>
+
+          <div class="btn-group">
+            <button id="create-interaction" class="btn btn-primary">Create Interactions</button>
+            <button id="cancel" class="btn btn-secondary">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="status" class="status"></div>
+  <script src="ui.js"></script>
+</body>
+</html> 

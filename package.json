@@ -1,13 +1,11 @@
 {
   "name": "state-manager",
   "version": "1.0.0",
-  "description": "Your Figma Plugin",
-  "main": "code.js",
+  "description": "Figma State Machine Plugin",
+  "main": "dist/code.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "lint": "eslint --ext .ts,.tsx --ignore-pattern node_modules .",
-    "lint:fix": "eslint --ext .ts,.tsx --ignore-pattern node_modules --fix .",
-    "watch": "npm run build -- --watch"
+    "build": "node build.js",
+    "dev": "node build.js && echo 'Tip: For watch mode, run: npx esbuild --watch'"
   },
   "author": "",
   "license": "",
@@ -16,6 +14,7 @@
     "@figma/plugin-typings": "*",
     "@typescript-eslint/eslint-plugin": "^6.12.0",
     "@typescript-eslint/parser": "^6.12.0",
+    "esbuild": "^0.25.5",
     "eslint": "^8.54.0",
     "typescript": "^5.3.2"
   },

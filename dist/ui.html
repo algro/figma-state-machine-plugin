@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>State machine</title>
+  <style>
+/* State Machine Plugin UI Styles */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  background: #f6f6f6;
+  color: #333;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+  background: white;
+}
+
+.content {
+  display: flex;
+  height: calc(100vh - 48px);
+}
+
+.column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e5e5e5;
+}
+
+.column:last-child {
+  border-right: none;
+}
+
+.column-header {
+  background: #f6f6f6;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e5e5;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+}
+
+.column-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.component-list {
+  list-style: none;
+}
+
+.component-item {
+  padding: 12px;
+  margin-bottom: 8px;
+  background: #f9f9f9;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.component-item:hover {
+  background: #f0f9ff;
+  border-color: #18a0fb;
+}
+
+.component-item.selected {
+  background: #e3f2fd;
+  border-color: #18a0fb;
+  box-shadow: 0 0 0 1px #18a0fb;
+}
+
+.component-name {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.component-info {
+  font-size: 11px;
+  color: #666;
+}
+
+.rule-builder {
+  display: none;
+}
+
+.rule-builder.active {
+  display: block;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  font-size: 12px;
+  background: white;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #18a0fb;
+  box-shadow: 0 0 0 1px #18a0fb;
+}
+
+.actions-list {
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.action-item:last-child {
+  border-bottom: none;
+}
+
+.action-component {
+  flex: 1;
+  margin-right: 12px;
+  font-weight: 600;
+}
+
+.action-state {
+  flex: 1;
+}
+
+.btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: #18a0fb;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #0d8ce8;
+}
+
+.btn-secondary {
+  background: #f6f6f6;
+  color: #333;
+  border: 1px solid #e5e5e5;
+}
+
+.btn-secondary:hover {
+  background: #e5e5e5;
+}
+
+.btn-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.status {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  display: none;
+}
+
+.status.success {
+  background: #e8f5e8;
+  color: #2d5a2d;
+  border: 1px solid #b8e6b8;
+}
+
+.status.error {
+  background: #ffeaea;
+  color: #d8000c;
+  border: 1px solid #ffb3b3;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #666;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e5e5e5;
+  border-top: 2px solid #18a0fb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 12px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.rule-preview {
+  background: #f9f9f9;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 16px;
+  font-family: 'Monaco', monospace;
+  font-size: 11px;
+  color: #666;
+}
+
+.conditional-rules {
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  min-height: 120px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.conditional-rule-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #e5e5e5;
+  gap: 12px;
+}
+
+.conditional-rule-item:last-child {
+  border-bottom: none;
+}
+
+.rule-if-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  min-width: 20px;
+}
+
+.rule-then-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  min-width: 35px;
+}
+
+.rule-condition {
+  flex: 1;
+  min-width: 120px;
+}
+
+.rule-action {
+  flex: 1;
+  min-width: 120px;
+}
+
+.remove-rule {
+  background: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.remove-rule:hover {
+  background: #ff3742;
+}
+
+.empty-rules {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 11px;
+  text-align: center;
+} 
+</style>
+</head>
+<body>
+  <div class="content">
+    <!-- Column 1: Components List -->
+    <div class="column">
+      <div class="column-header">Component Types</div>
+      <div class="column-content">
+        <div id="loading" class="loading">
+          <div class="spinner"></div>
+          Analyzing selection...
+        </div>
+        
+        <div id="empty-state" class="empty-state" style="display: none;">
+          <div class="empty-state-icon">📦</div>
+          <div>No component types found</div>
+          <div style="font-size: 11px; margin-top: 8px; opacity: 0.7;">
+            Select a component instance with nested variant components
+          </div>
+        </div>
+        
+        <ul id="component-list" class="component-list" style="display: none;"></ul>
+      </div>
+    </div>
+
+    <!-- Column 2: Rule Builder -->
+    <div class="column">
+      <div class="column-header">Interaction Builder</div>
+      <div class="column-content">
+        <div id="no-selection" class="empty-state">
+          <div class="empty-state-icon">👈</div>
+          <div>Select a component type</div>
+          <div style="font-size: 11px; margin-top: 8px; opacity: 0.7;">
+            Choose a component type from the left to create click interactions
+          </div>
+        </div>
+
+        <div id="rule-builder" class="rule-builder">
+          <div class="form-group">
+            <label class="form-label">On Click, change clicked instance to</label>
+            <select id="primary-action" class="form-control">
+              <option value="">Select target state...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">For other instances, apply these conditional rules</label>
+            <div id="conditional-rules" class="conditional-rules">
+              <!-- Dynamic conditional rules will be populated here -->
+            </div>
+            <button id="add-rule" class="btn btn-secondary" style="margin-top: 8px;">+ Add Conditional Rule</button>
+          </div>
+
+          <div class="rule-preview">
+            <strong>Interaction Preview:</strong><br>
+            <span id="rule-preview-text">Select a component type and define the primary click action</span>
+          </div>
+
+          <div class="btn-group">
+            <button id="create-interaction" class="btn btn-primary">Create Interactions</button>
+            <button id="cancel" class="btn btn-secondary">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="status" class="status"></div>
+  <script>
+"use strict";(()=>{var v=Object.defineProperty;var x=Object.getOwnPropertySymbols;var I=Object.prototype.hasOwnProperty,k=Object.prototype.propertyIsEnumerable;var b=(e,n,t)=>n in e?v(e,n,{enumerable:!0,configurable:!0,writable:!0,value:t}):e[n]=t,h=(e,n)=>{for(var t in n||(n={}))I.call(n,t)&&b(e,t,n[t]);if(x)for(var t of x(n))k.call(n,t)&&b(e,t,n[t]);return e};console.log("UI JS loaded: version test");var w="RESET_TO_INITIAL",p=[],l=null,g={},r={component:"",primaryAction:"",conditionalRules:[]};document.addEventListener("DOMContentLoaded",()=>{$(),parent.postMessage({pluginMessage:{type:"init"}},"*")});function $(){var e,n,t,o,i;(e=document.getElementById("component-list"))==null||e.addEventListener("click",a=>{let c=a.target.closest(".component-item");c&&z(c.dataset.componentId)}),(n=document.getElementById("primary-action"))==null||n.addEventListener("change",a=>{r.primaryAction=a.target.value,s()}),(t=document.getElementById("add-rule"))==null||t.addEventListener("click",B),(o=document.getElementById("create-interaction"))==null||o.addEventListener("click",L),(i=document.getElementById("cancel"))==null||i.addEventListener("click",()=>{parent.postMessage({pluginMessage:{type:"cancel"}},"*")})}function B(){console.log("addConditionalRule called");let n={id:Date.now(),condition:"",action:""};r.conditionalRules.push(n),d(),s()}function L(){if(console.log("createInteraction called"),!r.component||!r.primaryAction){m("Please select a component and primary action","error");return}let e={id:`${r.component}_${Date.now()}`,component:r.component,primaryAction:r.primaryAction,conditionalRules:r.conditionalRules};parent.postMessage({pluginMessage:{type:"create-interaction",data:e}},"*")}function s(){let e=document.getElementById("rule-preview-text");if(!e)return;if(!r.component||!r.primaryAction){e.textContent="Select a component type and define the primary click action";return}let n=(l==null?void 0:l.name)||"Unknown Component",t=r.primaryAction,o=r.conditionalRules.length,i=`When ${n} is clicked, change to "${t}"`;o>0&&(i+=`
+Apply ${o} conditional rule${o!==1?"s":""} to other instances`),e.textContent=i}function d(){let e=document.getElementById("conditional-rules");if(e){if(e.innerHTML="",r.conditionalRules.length===0){e.innerHTML='<div class="empty-rules">No conditional rules added yet</div>';return}r.conditionalRules.forEach((n,t)=>{var c;let o=document.createElement("div");o.className="conditional-rule-item",o.innerHTML=`
+      <div class="rule-if-label">If:</div>
+      <select class="rule-condition" data-rule-index="${t}" data-rule-part="condition">
+        <option value="">Select condition...</option>
+        ${S()}
+      </select>
+      <div class="rule-then-label">Then:</div>
+      <select class="rule-action" data-rule-index="${t}" data-rule-part="action">
+        <option value="">Select action...</option>
+        ${R()}
+      </select>
+      <button class="remove-rule" data-rule-index="${t}">\xD7</button>
+    `;let i=o.querySelector('[data-rule-part="condition"]'),a=o.querySelector('[data-rule-part="action"]');i&&(i.value=n.condition),a&&(a.value=n.action),i==null||i.addEventListener("change",u=>{r.conditionalRules[t].condition=u.target.value,s()}),a==null||a.addEventListener("change",u=>{r.conditionalRules[t].action=u.target.value,s()}),(c=o.querySelector(".remove-rule"))==null||c.addEventListener("click",()=>{A(t)}),e.appendChild(o)})}}function S(){if(!l)return"";let e=[];return Object.entries(l.properties).forEach(([n,t])=>{t.forEach(o=>{e.push(`<option value="${n}=${o}">${n} = ${o}</option>`)})}),e.join("")}function R(){if(!l)return"";let e=[];return Object.entries(l.properties).forEach(([n,t])=>{t.forEach(o=>{e.push(`<option value="${n}=${o}">${n} = ${o}</option>`)})}),e.push(`<option value="${w}">Reset to initial state</option>`),e.join("")}function A(e){r.conditionalRules.splice(e,1),d(),s()}function E(){let e=document.getElementById("primary-action");!e||!l||(e.innerHTML='<option value="">Select target state...</option>',Object.entries(l.properties).forEach(([n,t])=>{t.forEach(o=>{let i=document.createElement("option");i.value=`${n}=${o}`,i.textContent=`${n} = ${o}`,e.appendChild(i)})}))}function C(e){r=h({},e),E();let n=document.getElementById("primary-action");n&&(n.value=e.primaryAction),d(),s()}function y(){r={component:"",primaryAction:"",conditionalRules:[]};let e=document.getElementById("primary-action");e&&(e.innerHTML='<option value="">Select target state...</option>'),d(),s()}function m(e,n="info"){let t=document.getElementById("status");t&&(t.textContent=e,t.className=`status ${n}`,t.style.display="block",setTimeout(()=>{t.style.display="none"},5e3))}window.onmessage=e=>{let n=e.data.pluginMessage;switch(n.type){case"selection-changed":{f();let t=document.getElementById("loading"),o=document.getElementById("empty-state"),i=document.getElementById("component-list");t&&(t.style.display="block"),o&&(o.style.display="none"),i&&(i.style.display="none");break}case"init-success":M(n.data);break;case"error":{m(n.message,"error"),f();let t=document.getElementById("loading"),o=document.getElementById("empty-state"),i=document.getElementById("component-list");t&&(t.style.display="none"),o&&(o.style.display="block"),i&&(i.style.display="none");break}case"interaction-created":m(n.message,"success"),y();break;default:console.log("Unknown message type:",n.type)}};function M(e){p=e.components,g=e.existingInteractions||{},f();let n=document.getElementById("loading"),t=document.getElementById("empty-state"),o=document.getElementById("component-list");n&&(n.style.display="none"),p.length===0?(t&&(t.style.display="block"),o&&(o.style.display="none")):(t&&(t.style.display="none"),T(),o&&(o.style.display="block"))}function f(){l=null;let e=document.getElementById("rule-builder"),n=document.getElementById("no-selection");e&&e.classList.remove("active"),n&&(n.style.display="block"),y();let t=document.getElementById("status");t&&(t.style.display="none")}function T(){let e=document.getElementById("component-list");e&&(e.innerHTML="",p.forEach(n=>{let t=document.createElement("li");t.className="component-item",t.dataset.componentId=n.id;let o=Object.keys(n.properties).length,i=n.instances.length,a=g[n.id],c=a?" \u{1F39B}\uFE0F":"";t.innerHTML=`
+      <div class="component-name">\u{1F9E9} ${n.name}${c}</div>
+      <div class="component-info">
+        Rules apply to ${i} instance${i!==1?"s":""} \u2022 
+        ${o} variant propert${o!==1?"ies":"y"}
+        ${a?" \u2022 Has existing interactions":""}
+      </div>
+    `,e.appendChild(t)}))}function z(e){document.querySelectorAll(".component-item").forEach(a=>{a.classList.remove("selected")});let n=document.querySelector(`[data-component-id="${e}"]`);n&&n.classList.add("selected"),l=p.find(a=>a.id===e),r.component=e;let t=document.getElementById("no-selection"),o=document.getElementById("rule-builder");t&&(t.style.display="none"),o&&o.classList.add("active"),E();let i=g[e];i?C(i):y(),d()}})();
+//# sourceMappingURL=ui.js.map
+
+</script>
+</body>
+</html> 
