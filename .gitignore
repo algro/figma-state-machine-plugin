@@ -1,135 +1,69 @@
-# State Machine Plugin - Development Notes
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-## Project Overview
-**Figma Plugin ID**: 1522310270574771660  
-**Plugin Name**: State machine  
-**Last Updated**: 2024-12-19
+# Build outputs
+dist/
+build/
+*.js.map
+*.css.map
 
-## Purpose & Goals
-This Figma plugin enables designers to create dynamic state transitions between component variants without manual prototyping. The plugin automatically detects component variants and creates interactive state management systems using Figma variables and prototype reactions.
+# Build artifacts
+code.js
+ui.js
+ui.css
 
-**Key Use Cases:**
-- Interactive UI components (buttons, cards, modals)
-- Multi-state component systems (loading, error, success states)
-- Conditional state changes based on other component states
-- Complex interaction flows with multiple decision points
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-## Architecture Overview
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-### Core Components
-1. **Main Plugin (`code.ts`)** - Backend logic running in Figma's plugin environment
-2. **UI Interface (`ui.html`)** - Frontend web interface for user interaction
-3. **State Management** - Figma variables and prototype reactions system
+# Logs
+logs
+*.log
 
-### How It Works
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
 
-#### 1. Selection Analysis
-- User selects a component instance containing nested variant components
-- Plugin traverses the selection tree to find all `InstanceNode` types
-- Groups instances by their parent component/component-set for variant management
+# Coverage directory used by tools like istanbul
+coverage/
 
-#### 2. Component Detection
-- Identifies component variants by checking for `ComponentSetNode` parents
-- Extracts available states from `componentPropertyDefinitions`
-- Maps variant properties (e.g., "State" with values: "Default", "Hover", "Active")
+# nyc test coverage
+.nyc_output
 
-#### 3. Variable Creation
-- Creates a Figma variable collection named "state-machine"
-- Generates boolean variables for interaction triggers
-- Creates string variables for state management per component instance
+# Dependency directories
+jspm_packages/
 
-#### 4. Interaction Setup
-- **Primary Action**: Defines what happens when the component is clicked
-- **Conditional Rules**: Define state changes for other instances based on conditions
-- Applies prototype reactions to component instances
+# Optional npm cache directory
+.npm
 
-### Key Features
+# Optional REPL history
+.node_repl_history
 
-#### Variable Management
-- Automatic cleanup of orphaned variables
-- Persistent storage of interaction data using `figma.clientStorage`
-- Support for multiple concurrent state machines
+# Output of 'npm pack'
+*.tgz
 
-#### Interaction Types
-- **Direct State Change**: Click → Change to specific state
-- **Conditional Logic**: If [condition] then [action]
-- **Reset Functionality**: Return to initial state option
+# Yarn Integrity file
+.yarn-integrity
 
-#### Error Handling
-- Validates user selection (must be single component instance)
-- Checks for nested variant components
-- Handles missing component definitions gracefully
+# dotenv environment variables file
+.env
 
-## Current State & Recent Work
-
-### Last Session Focus
-- Initial plugin setup and architecture
-- Core component detection and analysis logic
-- Variable creation and management system
-- Basic UI for component selection and rule building
-
-### Working Features
-✅ Component instance detection  
-✅ Variant property extraction  
-✅ Variable collection management  
-✅ Basic interaction creation  
-✅ Data persistence with client storage  
-✅ Cleanup functionality for orphaned variables  
-
-### Known Limitations
-- Only supports VARIANT type component properties
-- Requires manual selection of parent component containing variants
-- No support for complex nested component hierarchies
-- Limited to boolean and string variable types
-
-## Technical Implementation
-
-### Key Functions
-- `findNestedInstances()` - Recursively finds all component instances
-- `groupInstancesByComponent()` - Groups instances by their parent component
-- `createInteraction()` - Creates variables and applies prototype reactions
-- `performComprehensiveCleanup()` - Removes orphaned variables and data
-
-### Data Structures
-```typescript
-interface ComponentInfo {
-  id: string;
-  name: string;
-  instances: InstanceNode[];
-  states: string[];
-  properties: { [key: string]: string[] };
-}
-
-interface Interaction {
-  id: string;
-  component: string;
-  primaryAction: string;
-  conditionalRules: ConditionalRule[];
-}
-```
-
-### Storage Strategy
-- Uses `figma.clientStorage` for persistent interaction data
-- Storage key pattern: `interaction_{componentId}`
-- JSON serialization for complex data structures
-
-## Development Environment
-- **TypeScript**: ^5.3.2
-- **Build Tool**: Native TypeScript compiler
-- **Linting**: ESLint with Figma plugin rules
-- **Target**: Figma Plugin API v1.0.0
-
-## Next Steps & Future Enhancements
-1. Support for more complex component hierarchies
-2. Visual state flow diagram in UI
-3. Export/import of state machine configurations
-4. Performance optimization for large component sets
-5. Integration with Figma's Dev Mode for code generation
-
-## Debug Information
-- Plugin uses `DEBUG_INSTANCE_INDEX = 16` for targeted debugging
-- Comprehensive logging throughout the codebase
-- Error boundaries for graceful failure handling
-
----
-*This file is automatically ignored by git and should be updated with each development session.*
+# TypeScript cache
+*.tsbuildinfo
