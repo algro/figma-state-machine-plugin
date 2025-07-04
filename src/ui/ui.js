@@ -12,6 +12,7 @@ let existingInteractions = {}; // Store existing interactions data
 let currentInteraction = {
   component: '',
   primaryAction: '',
+  nestedActions: [], // New: actions for other nested component types
   conditionalRules: []
 };
 
@@ -41,6 +42,9 @@ function setupEventListeners() {
   // Add conditional rule button
   document.getElementById('add-rule')?.addEventListener('click', addConditionalRule);
 
+  // Add nested action button
+  document.getElementById('add-nested-action')?.addEventListener('click', addNestedAction);
+
   // Create interaction button
   document.getElementById('create-interaction')?.addEventListener('click', createInteraction);
 
@@ -57,11 +61,26 @@ function addConditionalRule() {
   const newRule = {
     id: ruleId,
     condition: '',
-    action: ''
+    action: '',
+    targetComponent: '' // New: specify which component this rule affects
   };
   
   currentInteraction.conditionalRules.push(newRule);
   renderConditionalRules();
+  updateRulePreview();
+}
+
+// Add nested action function
+function addNestedAction() {
+  if (!componentData || !Array.isArray(componentData) || componentData.length < 2) {
+    showStatus('No nested components to add actions for.', 'error');
+    return;
+  }
+  currentInteraction.nestedActions.push({
+    componentId: '',
+    action: ''
+  });
+  renderNestedActions();
   updateRulePreview();
 }
 
@@ -77,6 +96,7 @@ function createInteraction() {
     id: `${currentInteraction.component}_${Date.now()}`,
     component: currentInteraction.component,
     primaryAction: currentInteraction.primaryAction,
+    nestedActions: currentInteraction.nestedActions,
     conditionalRules: currentInteraction.conditionalRules
   };
   
@@ -100,12 +120,26 @@ function updateRulePreview() {
   
   const componentName = selectedComponent?.name || 'Unknown Component';
   const actionText = currentInteraction.primaryAction;
+  const nestedCount = currentInteraction.nestedActions.length;
   const rulesCount = currentInteraction.conditionalRules.length;
   
   let preview = `When ${componentName} is clicked, change to "${actionText}"`;
   
+  if (nestedCount > 0) {
+    preview += `\nAlso set ${nestedCount} nested component${nestedCount !== 1 ? 's' : ''}`;
+  }
+  
   if (rulesCount > 0) {
-    preview += `\nApply ${rulesCount} conditional rule${rulesCount !== 1 ? 's' : ''} to other instances`;
+    preview += `\nApply ${rulesCount} conditional rule${rulesCount !== 1 ? 's' : ''} to other components`;
+    
+    // Show details of each rule
+    currentInteraction.conditionalRules.forEach((rule, index) => {
+      if (rule.condition && rule.targetComponent && rule.action) {
+        const targetComponent = componentData?.find(c => c.id === rule.targetComponent);
+        const targetName = targetComponent?.name || 'Unknown Component';
+        preview += `\n  • If ${rule.condition}, then set ${targetName} to ${rule.action}`;
+      }
+    });
   }
   
   previewText.textContent = preview;
@@ -132,24 +166,40 @@ function renderConditionalRules() {
         <option value="">Select condition...</option>
         ${generateConditionOptions()}
       </select>
-      <div class="rule-then-label">Then:</div>
+      <div class="rule-then-label">Then set:</div>
+      <select class="rule-target-component" data-rule-index="${index}" data-rule-part="targetComponent">
+        <option value="">Select component...</option>
+        ${generateTargetComponentOptions()}
+      </select>
       <select class="rule-action" data-rule-index="${index}" data-rule-part="action">
         <option value="">Select action...</option>
-        ${generateActionOptions()}
+        ${generateActionOptionsForComponent(rule.targetComponent)}
       </select>
       <button class="remove-rule" data-rule-index="${index}">×</button>
     `;
     
     // Set current values
     const conditionSelect = ruleElement.querySelector('[data-rule-part="condition"]');
+    const targetComponentSelect = ruleElement.querySelector('[data-rule-part="targetComponent"]');
     const actionSelect = ruleElement.querySelector('[data-rule-part="action"]');
     
     if (conditionSelect) conditionSelect.value = rule.condition;
+    if (targetComponentSelect) targetComponentSelect.value = rule.targetComponent;
     if (actionSelect) actionSelect.value = rule.action;
     
     // Add event listeners
     conditionSelect?.addEventListener('change', (e) => {
       currentInteraction.conditionalRules[index].condition = e.target.value;
+      updateRulePreview();
+    });
+    
+    targetComponentSelect?.addEventListener('change', (e) => {
+      currentInteraction.conditionalRules[index].targetComponent = e.target.value;
+      // Update action options when target component changes
+      const actionSelect = ruleElement.querySelector('[data-rule-part="action"]');
+      if (actionSelect) {
+        actionSelect.innerHTML = '<option value="">Select action...</option>' + generateActionOptionsForComponent(e.target.value);
+      }
       updateRulePreview();
     });
     
@@ -180,12 +230,27 @@ function generateConditionOptions() {
   return options.join('');
 }
 
-// Generate action options
-function generateActionOptions() {
-  if (!selectedComponent) return '';
+// Generate target component options (all available nested components)
+function generateTargetComponentOptions() {
+  if (!componentData || !Array.isArray(componentData)) return '';
   
   const options = [];
-  Object.entries(selectedComponent.properties).forEach(([propName, values]) => {
+  componentData.forEach(component => {
+    options.push(`<option value="${component.id}">${component.name}</option>`);
+  });
+  
+  return options.join('');
+}
+
+// Generate action options for a specific component
+function generateActionOptionsForComponent(componentId) {
+  if (!componentId || !componentData) return '';
+  
+  const component = componentData.find(c => c.id === componentId);
+  if (!component) return '';
+  
+  const options = [];
+  Object.entries(component.properties || {}).forEach(([propName, values]) => {
     values.forEach(value => {
       options.push(`<option value="${propName}=${value}">${propName} = ${value}</option>`);
     });
@@ -193,6 +258,64 @@ function generateActionOptions() {
   
   options.push(`<option value="${RESET_TO_INITIAL}">Reset to initial state</option>`);
   
+  return options.join('');
+}
+
+// Render nested actions
+function renderNestedActions() {
+  const container = document.getElementById('nested-actions');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!currentInteraction.nestedActions || currentInteraction.nestedActions.length === 0) {
+    container.innerHTML = '<div class="empty-nested-actions">No actions for nested components yet</div>';
+    return;
+  }
+  currentInteraction.nestedActions.forEach((action, index) => {
+    const actionElement = document.createElement('div');
+    actionElement.className = 'nested-action-item';
+    actionElement.innerHTML = `
+      <select class="nested-action-component" data-action-index="${index}">
+        <option value="">Select nested component...</option>
+        ${(componentData || []).map(c => `<option value="${c.id}" ${action.componentId === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
+      </select>
+      <select class="nested-action-state" data-action-index="${index}">
+        <option value="">Select state...</option>
+        ${generateNestedActionOptions(action.componentId)}
+      </select>
+      <button class="remove-nested-action" data-action-index="${index}">×</button>
+    `;
+    // Set event listeners
+    actionElement.querySelector('.nested-action-component').addEventListener('change', (e) => {
+      const val = e.target.value;
+      currentInteraction.nestedActions[index].componentId = val;
+      renderNestedActions();
+      updateRulePreview();
+    });
+    actionElement.querySelector('.nested-action-state').addEventListener('change', (e) => {
+      const val = e.target.value;
+      currentInteraction.nestedActions[index].action = val;
+      updateRulePreview();
+    });
+    actionElement.querySelector('.remove-nested-action').addEventListener('click', () => {
+      currentInteraction.nestedActions.splice(index, 1);
+      renderNestedActions();
+      updateRulePreview();
+    });
+    container.appendChild(actionElement);
+  });
+}
+
+function generateNestedActionOptions(componentId) {
+  if (!componentId || !componentData) return '';
+  const component = componentData.find(c => c.id === componentId);
+  if (!component) return '';
+  const options = [];
+  Object.entries(component.properties).forEach(([propName, values]) => {
+    values.forEach(value => {
+      options.push(`<option value="${propName}=${value}">${propName} = ${value}</option>`);
+    });
+  });
+  options.push(`<option value="RESET_TO_INITIAL">Reset to initial state</option>`);
   return options.join('');
 }
 
@@ -222,7 +345,10 @@ function updatePrimaryActionStates() {
 
 // Populate existing interaction function
 function populateExistingInteraction(interaction) {
-  currentInteraction = { ...interaction };
+  currentInteraction = { 
+    ...interaction,
+    nestedActions: interaction.nestedActions || [] // Ensure nestedActions is initialized
+  };
   updatePrimaryActionStates();
   
   const primaryActionSelect = document.getElementById('primary-action');
@@ -231,6 +357,7 @@ function populateExistingInteraction(interaction) {
   }
   
   renderConditionalRules();
+  renderNestedActions();
   updateRulePreview();
 }
 
@@ -239,6 +366,7 @@ function resetInteractionBuilder() {
   currentInteraction = {
     component: '',
     primaryAction: '',
+    nestedActions: [],
     conditionalRules: []
   };
   
@@ -248,6 +376,7 @@ function resetInteractionBuilder() {
   }
   
   renderConditionalRules();
+  renderNestedActions();
   updateRulePreview();
 }
 
@@ -309,7 +438,7 @@ window.onmessage = (event) => {
 
 // Handle successful initialization
 function handleInitSuccess(data) {
-  componentData = data.components;
+  componentData = data.components || [];
   existingInteractions = data.existingInteractions || {};
   
   // Reset UI state
@@ -321,7 +450,7 @@ function handleInitSuccess(data) {
   
   if (loadingEl) loadingEl.style.display = 'none';
   
-  if (componentData.length === 0) {
+  if (!componentData || componentData.length === 0) {
     if (emptyStateEl) emptyStateEl.style.display = 'block';
     if (componentListEl) componentListEl.style.display = 'none';
   } else {
@@ -358,13 +487,17 @@ function renderComponentList() {
   
   list.innerHTML = '';
 
+  if (!componentData || !Array.isArray(componentData)) {
+    return;
+  }
+
   componentData.forEach(component => {
     const li = document.createElement('li');
     li.className = 'component-item';
     li.dataset.componentId = component.id;
     
-    const propertiesCount = Object.keys(component.properties).length;
-    const instancesCount = component.instances.length;
+    const propertiesCount = Object.keys(component.properties || {}).length;
+    const instancesCount = (component.instances || []).length;
     
     // Check if this component has existing interactions
     const hasExistingInteraction = existingInteractions[component.id];
@@ -393,7 +526,7 @@ function selectComponent(componentId) {
   if (selectedItem) selectedItem.classList.add('selected');
 
   // Update selected component and current interaction
-  selectedComponent = componentData.find(c => c.id === componentId);
+  selectedComponent = componentData && Array.isArray(componentData) ? componentData.find(c => c.id === componentId) : null;
   currentInteraction.component = componentId;
   
   // Show rule builder
@@ -415,4 +548,5 @@ function selectComponent(componentId) {
   }
   
   renderConditionalRules();
+  renderNestedActions();
 } 

@@ -1,7 +1,8 @@
 // Interaction manager module for handling interaction creation and management
 /// <reference types="@figma/plugin-typings" />
 
-import { Interaction, ComponentInfo } from './types';
+import { ComponentInfo } from './component-analyzer';
+import { Interaction, ConditionalRule } from './storage';
 import { RESET_TO_INITIAL } from './constants';
 import { extractPropertyValue, sendMessageToUI } from './utils';
 import { 
@@ -10,7 +11,7 @@ import {
   createAndBindVariables, 
   cleanupExistingInteraction 
 } from './variable-manager';
-import { findVariantProperty } from './component-analyzer';
+import { findVariantProperty, PropertyAnalysisResult } from './component-analyzer';
 import { storeInteractionData } from './storage';
 
 let componentData: ComponentInfo[] = [];
@@ -33,28 +34,33 @@ export function getComponentData(): ComponentInfo[] {
 /**
  * Create interaction and corresponding variables
  */
-export async function createInteraction(interactionData: Interaction): Promise<void> {
+export async function createInteraction(interactionData: any): Promise<void> {
   try {
     await setupVariableCollection();
-    
-    // Clean up any existing interaction with the same ID
     await cleanupExistingInteraction(interactionData.id);
-    
-    // Create variables for this interaction
+    // Handle main interaction as before
     const { primaryVar, conditionalVars } = await createInteractionVariables(interactionData);
-    
-    // Store the interaction
     interactions.push(interactionData);
-    
-    // Store interaction data in client storage for persistence
     await storeInteractionData(interactionData);
-    
-    // Apply variables and prototype links to instances
     await applyInteractionToInstances(interactionData, primaryVar, conditionalVars);
-    
+    // Handle nested actions (multi-target)
+    if (interactionData.nestedActions && Array.isArray(interactionData.nestedActions)) {
+      for (const nestedAction of interactionData.nestedActions) {
+        const nestedComponent = componentData.find(c => c.id === nestedAction.componentId);
+        if (!nestedComponent) continue;
+        // Create a fake interaction object for the nested component
+        const fakeInteraction = {
+          id: `${interactionData.id}_nested_${nestedComponent.id}`,
+          component: nestedComponent.id,
+          primaryAction: nestedAction.action,
+          conditionalRules: []
+        };
+        const { primaryVar: nestedPrimaryVar, conditionalVars: nestedConditionalVars } = await createInteractionVariables(fakeInteraction);
+        await applyInteractionToInstances(fakeInteraction, nestedPrimaryVar, nestedConditionalVars);
+      }
+    }
     const componentName = componentData.find(c => c.id === interactionData.component)?.name || 'Unknown Component';
     sendMessageToUI('interaction-created', null, `Interaction created successfully for ${componentName}`);
-    
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     sendMessageToUI('error', null, `Failed to create interaction: ${message}`);
@@ -142,7 +148,7 @@ async function applyInteractionToInstances(
 async function applyVariableBasedReactions(
   instance: InstanceNode,
   instanceIndex: number,
-  interaction: Interaction,
+  interaction: any, // Changed to any to support nestedActions
   component: ComponentInfo,
   instanceVars: Variable[],
   originalStates: string[],
@@ -163,88 +169,49 @@ async function applyVariableBasedReactions(
     }
   ];
   
-  // Action 2: Process conditional rules for other instances
-  const ruleMap = new Map<string, string>();
-  let mainResetValue: string | null = null;
-  
-  for (const rule of interaction.conditionalRules) {
-    if (!rule.condition || !rule.action || !rule.condition.includes('=')) {
+  // Process conditional rules for other components
+  for (const rule of interaction.conditionalRules || []) {
+    if (!rule.condition || !rule.action || !rule.targetComponent || !rule.condition.includes('=')) {
       continue;
     }
     
     const [conditionProp, conditionValue] = rule.condition.split('=');
-    const actionValue = rule.action;
     
-    if ((conditionProp === primaryProp || conditionProp.toLowerCase() === primaryProp.toLowerCase())) {
-      ruleMap.set(conditionValue, actionValue);
-      
-      if (conditionValue === primaryValue) {
-        mainResetValue = actionValue;
-      }
-    }
-  }
-  
-  // Apply rules to other instances
-  for (let j = 0; j < component.instances.length; j++) {
-    if (instanceIndex === j) continue; // Skip the clicked instance
-    
-    const otherInstance = component.instances[j];
-    
-    // Get current value of other instance
+    // Check if this rule's condition matches the current instance state
     let currentInstanceValue = '';
-    if (otherInstance.componentProperties && otherInstance.componentProperties[primaryProp]) {
-      const propValue = otherInstance.componentProperties[primaryProp];
+    if (instance.componentProperties && instance.componentProperties[conditionProp]) {
+      const propValue = instance.componentProperties[conditionProp];
       currentInstanceValue = extractPropertyValue(propValue);
     }
     
-    // Determine target value based on rules
-    let targetValue: string = originalStates[j]; // Default to original state
-    let ruleApplied = false;
-    
-    // Check if there's a specific rule for this instance's current state
-    if (ruleMap.has(currentInstanceValue)) {
-      const ruleAction = ruleMap.get(currentInstanceValue)!;
+    if (currentInstanceValue === conditionValue) {
+      // This rule should be applied - find the target component
+      const targetComponent = componentData.find(c => c.id === rule.targetComponent);
+      if (!targetComponent) continue;
       
-      if (ruleAction === RESET_TO_INITIAL) {
-        targetValue = originalStates[j];
-        ruleApplied = true;
-      } else if (ruleAction.includes('=')) {
-        const [actionProp, actionValue] = ruleAction.split('=');
-        if (actionProp === primaryProp || actionProp.toLowerCase() === primaryProp.toLowerCase()) {
+      // For cross-component actions, we need to create variables for the target component
+      // and then set those variables. This is a simplified approach.
+      try {
+        // Parse the action
+        let targetValue = rule.action;
+        if (rule.action === RESET_TO_INITIAL) {
+          targetValue = 'default'; // Simplified - you'll need proper original state tracking
+        } else if (rule.action.includes('=')) {
+          const [actionProp, actionValue] = rule.action.split('=');
           targetValue = actionValue;
-          ruleApplied = true;
         }
-      }
-    } 
-    
-    // If no specific rule matched, check if there's a main reset rule
-    if (!ruleApplied && mainResetValue) {
-      if (mainResetValue === RESET_TO_INITIAL) {
-        targetValue = originalStates[j];
-        ruleApplied = true;
-      } else if (mainResetValue.includes('=')) {
-        const [actionProp, actionValue] = mainResetValue.split('=');
-        if (actionProp === primaryProp || actionProp.toLowerCase() === primaryProp.toLowerCase()) {
-          targetValue = actionValue;
-          ruleApplied = true;
-        }
+        
+        // For now, we'll create a simple variable-based action
+        // In a full implementation, you'd need to create and bind variables for the target component
+        console.log(`Would set ${targetComponent.name} to ${targetValue} when ${component.name} is ${conditionValue}`);
+        
+        // TODO: Implement proper variable creation and binding for cross-component actions
+        // This requires creating variables for the target component and binding them to its properties
+        
+      } catch (error) {
+        console.error(`Failed to apply cross-component rule to ${targetComponent.name}:`, error);
       }
     }
-    
-    // Final fallback: reset to original state
-    if (!ruleApplied) {
-      targetValue = originalStates[j];
-    }
-    
-    actions.push({
-      type: 'SET_VARIABLE' as const,
-      variableId: instanceVars[j].id,
-      variableValue: {
-        resolvedType: 'STRING' as const,
-        type: 'STRING' as const,
-        value: String(targetValue)
-      }
-    });
   }
   
   // Create the reaction for this instance

@@ -272,7 +272,8 @@ body {
   align-items: center;
   padding: 12px;
   border-bottom: 1px solid #e5e5e5;
-  gap: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .conditional-rule-item:last-child {
@@ -298,6 +299,11 @@ body {
   min-width: 120px;
 }
 
+.rule-target-component {
+  flex: 1;
+  min-width: 100px;
+}
+
 .rule-action {
   flex: 1;
   min-width: 120px;
@@ -319,6 +325,62 @@ body {
 }
 
 .empty-rules {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 11px;
+  text-align: center;
+}
+
+/* Nested actions styles */
+.nested-actions {
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  min-height: 80px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.nested-action-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #e5e5e5;
+  gap: 8px;
+}
+
+.nested-action-item:last-child {
+  border-bottom: none;
+}
+
+.nested-action-component {
+  flex: 1;
+  min-width: 120px;
+}
+
+.nested-action-state {
+  flex: 1;
+  min-width: 120px;
+}
+
+.remove-nested-action {
+  background: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.remove-nested-action:hover {
+  background: #ff3742;
+}
+
+.empty-nested-actions {
   display: flex;
   align-items: center;
   justify-content: center;

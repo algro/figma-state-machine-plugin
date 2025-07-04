@@ -1,9 +1,15 @@
 // Variable manager module for handling Figma variables creation and management
 /// <reference types="@figma/plugin-typings" />
 
-import { ComponentInfo, Interaction, VariableBindingResult } from './types';
+import { ComponentInfo } from './component-analyzer';
+import { Interaction } from './storage';
 import { VARIABLE_COLLECTION_NAME } from './constants';
 import { extractPropertyValue } from './utils';
+
+export interface VariableBindingResult {
+  instanceVars: Variable[];
+  originalStates: string[];
+}
 
 let variableCollection: VariableCollection | null = null;
 

@@ -1,7 +1,18 @@
 // Component analysis module for detecting and analyzing component variants
 /// <reference types="@figma/plugin-typings" />
 
-import { ComponentInfo, PropertyAnalysisResult } from './types';
+export interface ComponentInfo {
+  id: string;
+  name: string;
+  instances: InstanceNode[];
+  states: string[];
+  properties: { [key: string]: string[] };
+}
+
+export interface PropertyAnalysisResult {
+  actualPropertyName: string | null;
+  isVariantProperty: boolean;
+}
 
 /**
  * Find all nested component instances within a selected node

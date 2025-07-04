@@ -11,11 +11,12 @@ if (!fs.existsSync('dist')) {
 esbuild.buildSync({
   entryPoints: ['src/plugin/main.ts'],
   bundle: true,
-  platform: 'node',
+  platform: 'browser', // Changed from 'node' to 'browser' for Figma compatibility
   outfile: 'dist/code.js',
   sourcemap: true,
   minify: true,
   target: ['es2017'], // Updated to support Object.entries() and Array.includes()
+  format: 'iife', // Ensure it's wrapped in an IIFE for browser environment
 });
 
 // Bundle UI code (ui.js + ui.css)

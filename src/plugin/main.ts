@@ -3,11 +3,16 @@
 
 import { UI_WIDTH, UI_HEIGHT } from './constants';
 import { sendMessageToUI, handleError } from './utils';
-import { InitSuccessData } from './types';
-import { findNestedInstances, groupInstancesByComponent } from './component-analyzer';
+import { findNestedInstances, groupInstancesByComponent, ComponentInfo } from './component-analyzer';
 import { setupVariableCollection, performComprehensiveCleanup } from './variable-manager';
 import { createInteraction, setComponentData, getComponentData } from './interaction-manager';
-import { getExistingInteractions, cleanupStoredInteractions } from './storage';
+import { getExistingInteractions, cleanupStoredInteractions, Interaction } from './storage';
+
+export interface InitSuccessData {
+  selectedInstance: string;
+  components: ComponentInfo[];
+  existingInteractions: { [componentId: string]: Interaction };
+}
 
 // Initialize plugin
 figma.showUI(__html__, { width: UI_WIDTH, height: UI_HEIGHT });
@@ -27,7 +32,7 @@ figma.ui.onmessage = async (msg: { type: string; data?: any }) => {
         await initializePlugin();
         break;
       case 'create-interaction':
-        await createInteraction(msg.data);
+        await createInteraction(msg.data); // msg.data now may include nestedActions
         break;
       case 'get-components':
         sendMessageToUI('components-data', getComponentData());

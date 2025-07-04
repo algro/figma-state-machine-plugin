@@ -1,8 +1,22 @@
 // Storage module for handling client storage operations
 /// <reference types="@figma/plugin-typings" />
 
-import { Interaction, ComponentInfo } from './types';
+import { ComponentInfo } from './component-analyzer';
 import { STORAGE_KEY_PREFIX } from './constants';
+
+export interface Interaction {
+  id: string;
+  component: string;
+  primaryAction: string;
+  conditionalRules: ConditionalRule[];
+}
+
+export interface ConditionalRule {
+  id: number;
+  condition: string;
+  action: string;
+  targetComponent?: string; // New: specify which component this rule affects
+}
 
 /**
  * Store interaction data in client storage
